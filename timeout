@@ -268,9 +268,10 @@ sub foreach_applicable_process
 sub hires_proc_runtime
 {
 	my ($pid) = @_;
-	my $stat = `cat /proc/$pid/stat 2>/dev/null`;
-	# Since we invoke this function quite often, process may decease betweem ps invocation and attempt to access its /proc entry.  So, we return undef and handle it in the caller.  That's also the reason of error redirection to void.
-	return undef unless $stat;
+	open(HANDLE, "</proc/$pid/stat") or return undef;
+	# Since we invoke this function quite often, process may decease betweem ps invocation and attempt to access its /proc entry.  So, we return undef and handle it in the caller.
+	return undef unless defined(my $stat = <HANDLE>);
+	close HANDLE or return undef;
 	# Parse proc stats--14th is utime, and it's expressed in ticks.
 	my (undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,undef,$utime_ticks,$stime_ticks,$cum_utime_ticks,$cum_stime_ticks) = split /\s+/,$stat;
 	return (($utime_ticks + $stime_ticks)/$ticksize, ($cum_utime_ticks + $cum_stime_ticks)/$ticksize);
